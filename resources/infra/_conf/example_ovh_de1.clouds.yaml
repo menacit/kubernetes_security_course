@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2025 Menacit AB <foss@menacit.se>
+# SPDX-License-Identifier: CC0-1.0
+
+# Example configuration for OpenStack cloud: OVH - DE1 region
+clouds:
+  "openstack":
+    region_name: "DE1"
+    interface: "public"
+    identity_api_version: 3
+    auth_type: "v3applicationcredential"
+    auth:
+      auth_url: "https://auth.cloud.ovh.net/"
+      application_credential_id: "<YOUR_APPCRED_ID>"
+      application_credential_secret: "<YOUR_APPCRED_SECRET>"

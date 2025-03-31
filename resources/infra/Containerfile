@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: © 2025 Menacit AB <foss@menacit.se>
+# SPDX-License-Identifier: CC-BY-SA-4.0
+FROM python:3.13.1
+
+ARG SHELL_PREFIX=ansible_cm
+ARG TOFU_DEB_URL=https://github.com/opentofu/opentofu/releases/download/v1.8.8/tofu_1.8.8_amd64.deb
+ARG TOFU_DEB_CHECKSUM=03426507b5062cffab55537b5bd0e268e9f3a72b0477cd2e945c911159c82019
+
+RUN apt-get update \
+        && apt-get install -y --no-install-recommends \
+        bash-completion ca-certificates coreutils curl \
+        && rm -rf /var/lib/apt-get/lists/* \
+        && apt-get autoremove -y
+				
+RUN echo PS1=\"${SHELL_PREFIX} \\w: \" >> /etc/bash.bashrc
+RUN echo ". /etc/bash_completion" >> /etc/bash.bashrc
+
+WORKDIR /tmp
+RUN curl --location --output tofu.deb $TOFU_DEB_URL \
+		&& echo "$TOFU_DEB_CHECKSUM tofu.deb" > SHA256SUMS \
+		&& sha256sum --check SHA256SUMS \
+		&& apt-get install -y --no-install-recommends ./tofu.deb \
+		&& rm -rf /var/lib/apt-get/lists/* \
+		&& apt-get autoremove -y \
+		&& rm -rf tofu.deb SHA256SUMS
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY galaxy_dependencies.yml .
+RUN ansible-galaxy install -r galaxy_dependencies.yml
+
+RUN openstack complete > /etc/bash_completion.d/openstack
+
+RUN useradd -d /tmp cm
+USER cm
+WORKDIR /data

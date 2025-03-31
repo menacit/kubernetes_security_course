@@ -1,0 +1,479 @@
+SPDX-FileCopyrightText: © 2025 Menacit AB <foss@menacit.se>
+SPDX-License-Identifier: CC-BY-SA-4.0
+
+Tags:
+> authn authz privesc breakout containersec hardening methodology persistence intro tenancy
+> forensics detection runtime cni ingress ctrlplane crypto recovery trivia demo labs quiz
+> etcd kubelet containerd integration goals volume todo net pivot admission rbac addon secrets
+
+How is the control plane components hosted? As binaries running on hosts? Static pods running on nodes with Kubelets? As pods running inside another cluster? What about etcd - is it cohosted on the same nodes? An external cluster? #ctrlplane #trivia #intro #recovery
+
+Generally speaking, if control plane components (especially API server cloud-controller) or etcd has been compromised, do not attempt recovery - probably more expensive and error prone than setting up a new cluster. Put those resources on automating cluster setup/treat clusters as cattle instead #recovery #ctrlplane #recovery #etcd
+
+Pros/Cons with joining control plane hosts as nodes on the cluster - nice to be able to utilize K8S to run/manage cluster-supporting components, but increases the risk of malicious workloads being run on the nodes and thereby breakout. Exposing Kubelet API is also a risk. #kubelet #ctrlplane #hardening #breakout
+
+
+If API server is compromised, etcd is also likely compromised as we have write privileges (and probably no RBAC) #recovery #ctrlplane
+
+
+If recovering compromise of a control plane/etcd, rotate/change any secrets that have been used in the cluster, be aware of which secret you cannot or which credentials that you cannot revoke that need other workarounds like removing role bindings or not reusing certificate common names #crypto #recovery #ctrlplane #etcd #persistence
+
+Many clusters have an integration with underlying cloud platform via the cloud controller, could be used to access other resources outside the cluster in the cloud tenant. Make sure to rotate those as well. #recovery #breakout #ctrlplane #integration
+
+Attackers who have gained initial access to an application in Kubernetes will likely use port scanning and interactions with the API server in attemps to move laterally. Detecting port scanning could probably be done by monitoring flow data and "unusual" requests to the API server could be monitored, like attempts to do anonymous authn/authz failures from pod CIDRs #authn #authz #detection #methodology #cni #pivot
+
+
+Attackers may attempt to compromise a cluster in order to use the victim's resources to run their own crypto miner, i.e. a crypto jacking attack. Mayhaps also to perform DoS #goals
+
+I find that in practice it's kind of hard to use resource utilization metrics as a tool for security, at least in any kind of reliable way. So what I would suggest there is instead perhaps to create some alert to log when utilization is high for pods without auto scaling enabled. So of course this could have a lot of false positives and things, but it could be an operational alert that could provide security detection as well. #detection #trivia
+
+Attackers may attempt to use anonymous accounts to avoid attribution of their activities in
+the cluster. Yes, we should log anonymous accounts from pod and node IPs. Yeah, and maybe from node IPs if accounts accept system node ones are used, I'm not sure. #authn #detection
+
+
+Attackers may try to add a volume mount to a container they have compromised or are creating to gain access to the host. Log detection recommendation, volume mount section should be closely monitored for abnormalities, like hostPath #breakout containersec #volume #detection
+
+
+Wondering how detailed the logs for violations against pod security profiles would be pod security levels. #detection #todo #containersec #breakout
+
+We should block network connections to Kubelet from other IPs than that of control plane (and monitoring) nodes - in addition we should alert on it, can we see source IP in Kubelet logs? #todo #detection #net #kubelet
+
+Monitor/Alert on kubelet authn where the user ain't API server #authn #detection #kubelet
+
+When performing IR/recover, remember to look for scheduled jobs/CronJobs objects in Kubernetes #persistence #recovery 
+
+Does FIM make sense for the control plane? Perhaps modification of admission controller configs and similar, but FIM these days is always tricky #detection #ctrlplane
+
+
+Shared responsibility model when using a managed Kubernetes provider. And typically, that means they take care of control plane and cluster software patches while you as the user or customer are responsible for software configuration that is deployed within the cluster. However, administrators must ensure that their deployments are up to date and developers properly tag new images to avoid accidental deployments of outdated images. #intro #methodology
+
+Should we prune old and vulnerable images from our repositories to prevent them from being used? Works if we combine it with an image pull policy of "Always" #containersec
+
+Avoid using "latest" tag, enforce "imutable tags" #containersec
+
+KMS/encryption configuration settings, provide some examples - can be used for more than secrets #demo #labs
+
+
+The API server flag --token-auth-file-path (?) enables us to specify a file with (cleartext) "tokens" and a user/group mapping for those tokens. No hashing, but can be revoked - similar to u/p authentication. At the moment, requires restart of API server to reload token list #authn #ctrlplane
+
+
+The API server flag --anonymous-off argument can be set to false to disable all anonymous auth. Can break some things like health monitoring/"cluster discovery". Anonymous auth may increase attack surface, health checks should be able to authenticate with token. With RBAC enabled, anonymous auth ain't so bad, but increases risk of shooting yourself in the foot. #authn authz
+
+
+Ensure that "deny service external IPs" is set/admission controller is enabled. Services/Pods can be configured manually with user defined IP addresses. Could enable SSRF/proxying via API server to 127.0.0.1, cloud meta data services or other things that are isolated/only reachable from control plane nodes #hardening #pivot #net
+
+By default, the API server does not authenticate itself nor validates peer certificates when connecting to the kubelet API. We must configure support for this in both components #kubelet #authn #crypto #ctrlplane
+
+"TLS bootstrapping" enables turning a "bootstrap token" into a valid client certificate for nodes. #crypto #authn
+
+ImagePullPolicy "Always" is good, but puts image repository in critical path. Admission controller exist to always inject this. By default, "Always" is set if "latest" tag is used. Mayhaps not needed if we only use imutable image tags. #containersec #hardening
+
+ImagePullPolicy "Always" prevents tentants from utilizing container images they should be able to due to caching. In reality, considering how multi-tenancy is quite weak in Kubernetes, I'm not sure this is a super big problem to be concerned about #hardening #tenacy
+
+
+I think maybe a section of running air-gapped Kubernetes could be interesting. What components would we need to do that? We could use an image repository, we could preload images on nodes, etc. #todo #hardening #net #trivia
+
+Nodes can create "mirror pods", which basically makes static pods visible/interactable from the Kubernetes API #kubelet #trivia
+
+"NodeRestriction" is an admission controller that works in unison with the "Node" authorization module to restrict nodes. The authorization module restricts which pods and pod resources (secrets,PVCs, configmaps) a node can fetch - essentially, only pods scheduled to the specific node. The admission controller handles C~~R~~UD to restrict which and which parts of pod objects (and nodes) a node can modify. As adminission controllers cannot restrict reads, both must be used #authz #kubelet #privesc #admission #hardening
+
+"NodeRestriction" admission controller restricts which labels a node can modify on "itself" - allowing this could permitt tricking schedulers etc. #hardening #privesc #admission
+
+
+Make sure --service-account-lookup set to true (default) #authn #persistence
+
+Service accounts cannot be members of groups #trivia #authn
+
+In RBAC, got roles, clusterRoles, roleBindings, clusterRoleBindings #authz #rbac
+
+roleBindings and cluserRoleBindings can be configured for users, groups and service accounts
+
+roles and roleBindings are bound to a specific namespace #authz #rbac
+
+clusterRoleBindings are similar to roleBindings, but they are not namespaced, so they work for both non-namespaced objects and actions across different namespaces. #authz #rbac
+
+
+We can use a role-binding for a cluster role, so we can have a global role that's shared between different namespaces, but that can be bound to a specific namespace, and thereby restricted to actions in that namespace. #authz #rbac
+
+When RBAC is enabled, it is deny by default. We can only express rules to permit access, not deny it #authz #rbac
+
+Default roles that are maintained by the Kubernetes project. Kept up-to-date with new releases of Kuberentes. We can add an annotation to keep it automatically updated or pinned to the "current" version. The benefit with keeping it up-to-date is that privescs may be fixed/new use-cases solved, but may break workloads if new version is more restrictive. "rbac.authorization.kubernetes.io/autoupdate: false" #rbac #authz #hardening
+
+roles and clusterRoles cannot be modified once bound. "kubectl auth reconcile" can be used to work around this. To update the role, first delete the binding and replace it, could be disruptive. Fairwind's RBAC Manager operator works around this #authz #rbac #addon
+
+
+RBAC rules state that the following verbs should be allowed on the following resources, typically. #authz #rbac
+
+
+Examples: get and list pods, create and delete secrets, get and list * #authz #rbac
+
+
+We can also specify resource names. For example, we can permit modification of a certain deployment,
+or pod, or network policy, or whatever, by specifying the name of that object. #authz #rbac
+
+
+There is no way of using globs in resource names, so it's either the complete resource name or all resources of that kind that has been specified. #authz #rbac
+
+
+Members of the "system:masters" group bypass all authorization checks. No PC name. Danger danger! #authz #persistence
+
+ABAC seems dead, but has been "undeprecated". #authz
+
+ABAC is configured via a static JSON policy file on the API server, basically user/group can RW or RO for specified resource in specified namespace. No concept of separating roles and bindings #authz
+
+subjectAccessReview and its siblings can be used to enumerate/validate authorization configuration, provide. Post something that looks like an RBAC role (user, resource, verb, etc), get back allowed/denied #authz
+
+subjectAccessReview: Any user, LocalSubjectAccessReview: subjectAccessReview but bound to NS, SelfSubjectRulesReview: like LocalSubjectAccessReview but for requesting user #authz
+
+clusterRoles can reference "non-resource URLs", which can be used to permit access to paths like /healthz, /logs etc. Can also be used for arbitrary URLs when third-parties want to piggy-back on subjectAccessReview, like Kubelet for its API paths #authz #rbac
+
+Beware of faulty/unexpected usage of HTTP/Kubernetes verbs, like the case of pods/exec (relatively rare occurence) and CRDs. Potential foot-gun #authz #rbac
+
+subjectAccessReview and siblings can be accessed via kubectl sub-command "auth can-i" #authz
+
+Role privileges are not automatically inherited for sub-resources - a user who can get pods cannot automatically get pods/logs #authz #rbac
+
+Declaritivly managing RBAC role bindings can be a challenge - if the YAML file in a repo is deleted, the binding may still exist. Fairwind's RBAC Manager operator aims to work around this #authz #rbac #addon
+
+
+For a long time Kubernetes did not provide a built-in mechanism for fine grained controlled or what users were permitted to do with resources they had access to. To clarify, with RBAC you can say that a user can for example create pods and delete volumes. You can say that you can delete a volume named this. You could not restrict which volume type it is or the parameters used to create it. Another example is which image repositories are acceptable to for a user to use #addon #containersec #breakout #hardening #admission
+
+These days, there is something called "validating admission policy" built into Kubernetes, but it is quite new  #admission #containersec #hardening
+
+
+VAP basically allows us to define admission rules in the "CEL" language" that are interpreted in process so not by going out to like a third-party web service or via webhook #admission #hardening
+
+With VAP, we can define say which kind of resources or objects you want these rules to apply to #admission #hardening
+
+Admission controllers only apply to changes to the cluster, not for getting information #admission
+
+When did VAP became stable? #admission #todo
+
+And with VAP we can much like RBAC create policies and then we can create like policy bindings and binding-specific configuration/parameters for those policies. Enables us to have different limits for different NS #admission
+
+Common examples of third-party policy engines: OPA Gatekeeper, Kyverno, Kubewarden. OPA may be then one seeing most usage outside of K8S as well, a bit more general #admission #addon #hardening
+
+Compare limitations with VAP (and MAP) compared to third-party policy engines #admission #hardening #todo
+
+A bit obvious perhaps, but a user who is permitted to configure rules may use that to privesc. Furthermore, some solutions like OPA gatekeeper permits creating rules that can be used for SSRF #addon #admission #privesc #trivia
+
+Policy engines (and VAP) typically work with the JSON representation of the object that's being submitted and they basically it checks like if certain keys contain certain values, like looking for "runAsRoot" in the podspec #admission #hardening #addon
+
+
+But that these days pod security standards covers lots of what you used to need a policy engine for #admission #addon #containersec
+
+Policies working on the raw representation of objects are not intelligent and may need to be updated as K8S changes. An example is "ephemeral containers" - previously, to restrict things at the container level, the policy would iterate over the "containers" and "initContainers" keys - if the policy is not update to also iterate over "ephemeralContainers" key, then an attacker can created unrestricted containters #admission #containersec #hardening
+
+In Kubernetes, admission controllers and authorization modes can be configured to fail closed or fail open. Weigh operational vs "security" risks. Which is default? #admission #authz #addon #todo
+
+Policy engines and other addons accessed via Webhook introduce some amount of latency into requests #admission #authz #addon
+
+Validating admission controllers VS Mutating adminssion controllers. Validating give yes, no, no opinion. Mutating may or may not change the object specification #admission
+
+The term "container runtime" can mean multiple different things, are we talking about containerd or runc? Cloud native foundation has a blog post differntiating these by calling them "high-level runtime" and "low-level runtime. High-level would be containerd or cri-o, low-level runc/crun/etc. Low-level expects a JSON config file and a root file system for the container #trivia #runtimes
+
+Hierarchical namespace control is a (somewhat abandoned) project run by sig-auth, operator/addon. The idea is that you could give a namespace to a team and they could have then subnamespaces for their respective apps or whatever. Or you could perhaps have a namespace for dev and one for prod. Inheritance/sharing of limits is perhaps another thing to consider #addon #tenancy
+
+Cover soft VS hard multi-tenancy and namespaces in authz intro #authz #tenancy
+
+Cover pros/cons of using many/few namespaces. Admin overhead VS Access separation. Cover how it is practically used #tenancy #authz #hardening
+
+
+With "secret-store CSI", the idea here is to enable different storage methods for secrets besides the etcd so that we can use an external secret store, like those provided by the cloud providers or Vault/OpenBao. What about OpenStack Barbican? GA since? #secrets #addon #todo
+
+Without "secret-store CSI", secrets were commonly synchronized/rotated by a script between an external system and Kubernetes, a bit annoying #secrets
+
+Maybe worth like some common terms you run into and I think GA is one of those that maybe not everyone knows, but it's basically Kubernetes word for stable.#trivia
+
+
+They've added support in kubectl (or perhaps go client?) to get credentials from an executable. A command can be specified in the kubeconfig file. Useful to describe for custom/webhook authentication, but this also means that we can get code exec if someone uses our crafted kubeconfig file #trivia #privesc #trivia #authn
+
+
+KEP 2693. Client exec proxy of don't know what this means? #todo
+
+The "kube-rbac-proxy" basically uses subjectaccessreview API (like the kubelet) and reverse proxies HTTP/gRPC requests if permitted. Useful to restrict access to third-party/addon services. Supports mTLS and SA JWTs. sig-auth says that they will take over the project, but as of now it still seems to be run by an old CoreOS developer. #addon #rbac #hardening #authn
+
+Letting users edit or label their own namespace objects can be used for a bunch of interesting things like tricking network policies and change restrictions for security admission etc. It's also probably good to document what the immutable labels are #breakout #privesc
+
+A bunch of known privilge escalation paths are documented in the authorization/RBAC documentation for K8S - review them #todo #privesc #authz
+
+PVs are not bound to a NS. If we can create a PVC, we can bind to any unbound PV by specifying volumeName (regardless if we have privs to get/list PVs?). If a PV has the policy Retain and was previously used (for example by a StatefulSet that has changed their default PVC retention configuration), we might be able to bind it and steal information from another pod in another NS, right? #privesc #todo
+
+should use for like filtering and selection to prevent spoofing also relevant for for nodes
+
+We may not be allowed to create a hostPath volume due to pod security standards, but if we are allowed to create PVs we could do it that way with a PVC #privesc #breakout
+
+---
+
+Historically, Kubernetes used Docker under the hood to run pod contaniners. These days, it relies on CRI. CRI is supported by containerd, cri-o and probably others #runtimes #trivia
+
+Docker was split into Docker, containerd and runc #trivia #runtimes
+
+
+In Kubernetes, we can use a feature called runtime classes to support use of multiple run times in our cluster. #runtimes
+
+
+Two common options for OS-level virtualization is runc and crun, the difference is that runc is written in Go and crun is written in C. Both utilize more or less the same features in Linux for creating namespaces, etc. crun has less overhead, but mayhaps bigger risk for vulns. #runtimes #trivia
+
+
+ There is a fun Brian Cantrill definition of containers or OS-level virtualization. Something something diplomatic and lie. Find it! #todo #trivia
+
+  Most alternative run times or runtime classes aim to improve security or perhaps rather guest isolation compared to runc and other "classic OS-level runtimes #runtimes #hardening
+
+Representative four different runtime approaches: Kata, gVisor, "WASM" and confidential containers (typically a layer built upon Kata) #runtimes
+
+Kata takes maybe the most robust and straightforward approach. It runs the container images or rather the containers in the pod inside of a traditional hardware level virtual machine. Then it runs some software on the host and an agent in the guest to allow things such as sharing volumes and executing commands and things like that inside of the virtual machine. So each pod is its own VM, even though it stripped down virtual machine, still a HW-level virtual machine, so it has emulated hardware and its own kernel. #runtimes #hardening
+
+
+Kata's risk of breakout is lower than for OS-level virtualization, it comes with a price. Decreased performance, so both overhead in terms of all the supporting software, but also probably worse performance compared to running it on just the raw host. It also requires worker to have HW-level virtualization support, so either nested virtualization if your Kubernetes nodes are running on virtual machines or to run them on bare metal. And while some clouds these days support nested virtualization, it has further performance impact.
+
+
+For Kata, I would say compatibility these days is quite good, but still things like sharing more advanced data between the guest and the host. I don't know, Unix sockets maybe is a bad example, but like special devices that will not work, you will not be able to run things in the privileged pods if using other containers. #runtimes #hardening
+
+
+gVisor works by basically acting as a software emulated Linux kernel, so it will proxy syscalls to the real Linux kernel. Some of them it will handle in software and it will sanitize them and things before they hit the real Linux kernel. So it results in some performance overhead but less runtime overhead compared to running in virtual machines - I guess it depends what you do, how IO intensive or syscall intensive your application is. But at least it doesn't require any fancy hardware virtualization support to work, so you can you can run it without nested virtualization. #runtime #hardening
+
+gVisor was developed by Google to and used in Google production as far as I understood for Cloud Run, but don't quote me on that.
+
+Have there been any breakout vulnerabilities in gVisor? #runtimes #todo #breakout
+
+
+The main downside with gVisor I would say is compatibility, not all Linux application will work. They have not implemented all syscalls and there are probably differences in how the syscalls are actually interpreted or where compared to Linux. Linux on x86_64 has over 300 syscalls, so yeah probably quite a tricky thing to commonly to properly emulate. Common software should work, but mayhaps not exotic stuff. Beware of weird runtime behavior #runtimes
+
+
+A WASM runtime doesn't run traditional OCI images with a Linux root file system, but rather they run WebAssembly applications. Often packaged in OCI images, but still. This is neat because I mean they have clearly defined boundary with the world outside the application. I guess it depends on the runtime what they what they support, but like WASI I think is one #runtimes #hardening
+
+WASM is neat from an isolation perspective, performance is probably decent - depends on the WASM runtime, I suppose #runtimes
+
+The WASM downside is that you need custom-built apps compiled towards WebAssembly and WASI/whatever to actually use this and maybe the performance is not as good as with native binaries for your CPU architecture, so I don't know. Haven't seen it used super much #runtimes
+
+Is there any built-in method for restricting which runtime classes can be used in a NS? Tempting to say "only gVisor or Kata here" #runtimes #todo #authz
+
+Can we restrict usage of a specific runtime class in a NS using resource quotas? #runtimes #hardening #todo
+
+I've rarely seen people use other runtimes than runc, at least outside lab setups #runtimes #trivia
+
+I had a look at some historical vulnerabilities for etcd and in general they seem to be related to either denial of service or auth issues, primarily authorization #etcd #trivia
+
+So we have CVE2023-32-082 and this could allow when RBAC is enabled it could allow user to access the name of keys that they were not supposed to read. So not key values but just key names. #etcd
+
+And then we had CVE2021-28-235 and this was the leakage of auth credentials when the debug logging was active, exposed throught /debug/events over HTTP #etcd
+
+And CVE2018-16-88-6 and this is a very confusing bug which showed that if you utilize the "proxy service" you could accidentally authenticate using it's server certificate #etcd
+
+There are some debug endpoints exposed over HTTP without authentication (unless mTLS is required) #etcd
+
+One endpoint is expvars, exportvars I guess, where it prints the command line for the ETCD execution, basically argv and some metrics regarding raft and the garbage collection etc. I was looking quite a bit into that but I couldn't find any command line arguments which really contains all that much sensitive information. Stiff feels iffy #etcd
+
+Another endpoint that can be enabled either manually or by setting log level to "debug" is "pprof". Enables profiling, feels bad but could not see that it disclosed anything super sensitive. By default it is disabled, but the sample configuration file from their repo has it enabled. /debug/pproof #etcd
+
+Another endpoint is /debug/events, based on x/net/trace. Is enabled when log level is set to debug. Discloses requests to the server. Password for authentication is explicitly masked, but key names and password hashes when accounts are created. Not nice. #etcd
+
+Avoiding mutual TLS authentication due to lacking support for revocation #authn #recovery
+
+
+Could have an admin cert for mTLS as break glass in case of emergency/when other auth alternatives are disrupted #authn
+
+Users of the group "system:masters" bypass all authorization controls. If you look at setting up clusters with kubeadm these days, they actually create two kubeconfig files - admin.conf (not member of system:masters, permitted by RBAC to do everything*) and super_admin.conf (member of system:masters) #authn
+
+You could also probably set up some monitoring to alert when a user that's a member of system:masters, is utilized #authz #authn #detection
+
+
+For kubelet, in which case mutual TLS is commonly used for the client certificate and server certificate. We want them to be short-lived. We want to enable automatic rotation of those. The kubelets server certificate cannot be automatically refreshed without custom logic in K8S though #authn
+
+
+As we cannot revoke certificates, we should not reuse node names. Then we can at least delete the node object and remove any role bindings that exist. #authn #authz
+
+
+Avoid granting privileges to groups that are specific in client certificates, as these can't be revoked. #authn #authz
+
+
+Users/Groups are not API server objects. Service accounts exist as resources in the API. Nodes exist as resources, but are separated from node users/identities when acting as clients to the API server #authn
+
+As users (and their group membership) are not API server objects, we cannot lookup what a user is allowed to do based on RBAC role bindings if those are bound to a group #rbac
+
+User is supplied by the authentication mechanism in use. Users with the same name from different authentication mechanisms will be treated as the same user #authn
+
+
+Webhook authentication takes a token of some sort from a header (which name is?), relays it to a third party and gets a response back and that should contain user and groups if it's valid. Is it really the way it works? #authn #todo
+
+OIDC is recommended for human users. Benefit there is that you have short-lived tokens and it's up to the IDP to revoke access #authn
+
+Does K8S OIDC supports "back-channel logout"? #authn #todo
+
+
+There is a tokenrequest API where we can, if we have the sufficient privileges, request JWT for a service account. So it's tied to a service account in that namespace. These have an expiry time, default 60m?, but by default (it is configurable) there is no limit how long validity a user can request - could be ten years. So that could be a way for a malicious actor to gain persistence to issue one of these tokens with a very long validity. They are not stored as API resources/in etcd, a JWT is returned. Sneaky. #authn #persistence #recovery #todo
+
+
+Using tokenrequest API could be a bit more sneaky that way compared to old-school service account tokens for persistence. #authn #persistence
+
+
+With the tokenrequest API, you can also specify a token "audience". This allows you to safely use it to access third-party services, like Vault, without risking that they relay them/try to use to authentication to the K8S API. By default, I think the audience is "kubernetes" for access to the API server? #authn #hardening #todo
+
+
+The JWT audience feature is nice, but it's up to the receiving service (validator) to actually check and restrict these #authn
+
+
+There are two types of service account tokens these days. They are either called long-lived or, for lack of a better word, the "old type" of service account tokens, which are also JWTs, but without an expiry, without audience, without pod binding, and therefore non-revocable. #authn
+
+It used to be the case that when a service account was created, it would also create a matching secret in the namespace with the static/"old type" service account tokens. This is no longer done by default since v1.24 and requires us to add an annotation to the service acccount object. Probably wanna restrict that with a VAP #authn #admission
+
+The kubelet typically refreshes "time-bound" token for pods, but if you have some legacy controller/application that can't handle the rotation you may still wanna permit use of "legacy service account tokens" #authn
+
+
+One thing I should note about the new kind of service account tokens, the time bound ones, is that they can also be bound to a specific object. So that means that you can bind it to a pod UID and I won't be usable after that pod is deleted, regardless of expiry time. objectRef, boundObjectRef #authn
+
+It should also be noted here that the time boun  service accounts, also contain the service account UID. That means that we can handle compromise recovery by recreating (deleting and creating) a service account - not requiring us to change its name/role bindings. #authn
+
+Got privileges to access secrets enables you to access all service accounts in that namespace with "legacy SA tokens enabled" #authz #privesc
+
+If we can create pods, we can assign any SA in the NS to that pod #privesc #authz
+
+We cannot refresh a time-bound SA token using only that token, makes sense #authn
+
+Kubelet handles SA token refresh when it has reached 80% of its lifespan. For refresh to work, we must expose SA token as file, not environment variable #authn. Furthermore, the API client in the pod must support refreshing the token from file, which the official ones do these days #kubelet #trivia
+
+
+We can utilize an API called "token review". And it will basically tell us if it's valid and do the extraction of the things from the JWT that we could do manually. Perhaps also check that boundObjectRef still exists. Right? #authn #todo
+
+And I think that by default RBAC rules that API is usable without authentication, at least the way it's set up with our back in the kubeadm #authn #todo
+
+---
+
+We can use a separate private key for signing the SA JWTs. That can be either like is the private key on disk. But it can also be a KMS plugin running on a Unix socket. I should check if that if there's any specific protocol or if it's something very minimal interfaces for for for signing or something there if it's something that could be reused in other cases instead of PKCS#11, perhaps. If it breaks, things will relying on service accounts will grind to halt #todo #authn #hardening
+
+
+Disabling auto mounting of service account tokens in pods is a good idea #hardening #authn #containersec
+
+
+And the configuration flag that I talked about earlier for configuring how long was the maximum for validity of service account tokens would be is called --service-amount-max-token-expiration. No default value, at least upstream #authn
+
+Bound object ref is not required when creating time bound SA tokens. But if we use them, we basically say an object that is API kind name and UID #authn
+
+
+So we talk a lot about the chroot syscall, but today apparently another one is most commonly used called pivot root. The main difference is that pivot root takes advantage of the mount namespaces. The old root is no longer mounted and is therefore no longer accessible with the mount namespace. chroot doesn't take this approach is therefore considered less secure #containersec #trivia
+
+Lizz Rice's container security book claims that the kernel "keyring" is not namespaced, so it's a good idea to block containers from key request/keyctl syscalls. Verify that it's still true #containersec #todo
+
+Annecdotally, the default docker seccomp profile blocks 40 of the 300 plus Linux syscalls. What about these days? #todo  #containersec
+
+
+For generating seccomp profiles, we can use tools like strace, Falco2secomp or utilities based on eBPF, like tracee. Beware that this observational-approach is error prone, preferably profiles are developed by observing source code also #containersec
+
+bane is a tool for creating apparmor profiles for container workloads #containersec
+
+Custom seccomp, apparmor and SELinux must be distributed manually to nodes #hardening #containersec
+
+For legacy reasons, Kubernetes does not use Dockers/containerd/runc's default seccomp profile by... default. It can be activated and is required Pod Security Standards. Still true? #hardening #containersec #todo
+
+
+"Immutable containers" basically means running with read-only root file system and using explicit volumes if you want to write something. Option can be set in securityContext #containersec
+
+Checkout Lizz Rice's "running with scissors" blog post regarding running pods as root on K8S #todo #containersec #hardening #breakout
+
+"rootless containers" enables us to run containers without root privileges. Sometimes setuid helpers are used, feels like cheating. Relies on "user namespaces", which serves two purposes: creating a "fake" root user we can utilize in containers that expect to be running as UID 0, and the ability for unprivileged users to create other namespaces, right? #containersec #todo
+
+
+Resource quotas could be useful from a security perspective, especially for limiting the number of node port, load balancer type services, instances of a runtimeclass, etc that the user can create #hardening
+
+Why are we using environment variables to configure our containerized apps? One book claims that it is https://12factor.net/config fault. Regardless it is somewhat risky to pass secrets this way as the many apps leak environment in error messages/debug logs. Furthermore, unlike files shared via volumes, environment variables can't be refreshed - this means we can't rotate keys/certs without terminating the pods (something that doesn't automatically happen when we modify a secret) #hardening #containersec #secrets
+
+
+sig-auth talk about a new feature called "restricted anonymous", which is available under KEP 4633. The idea is to restrict which resources you can provide anonymous authentication to, like /healthz and /oauth. We can restrict access to these with RBAC, but with the risk of shooting ourselfs in the foot by permitting unauthenticated requests. Is it GA? #authn #hardening #todo
+
+
+Version 1.32 offers a GA structured authorization configuration file. It allows fine grained ordering of authz modules/modes (first webhook, then node, then rbac and finally another webhook) and usage multiple webhooks. We can also configure timeouts, fail open/closed policies, etc in one place. For webhooks, we can configure CEL expressions to filter for which namespaces, users, resource types, etc the webhook should be used for. It's "hot reloadable" BTW! #authz
+
+Exercise: Writing your own webhook authorizer to deny all requests from members of the group "CATS" #authz #labs
+
+
+Look into KEP 4872 "extended validation of Kubelet server certificate" #todo #kubelet #authn
+
+
+In the "RBAC++" talk, there were a bunch of RBAC user stories describing the need to make the RBAC system less static. I took a screenshoot with my phone. Describes limitations of RBAC - we cannot describe "delete all secrets" we've created or "exec into all pods created by me". Add link to presentation, still pre-alpha. Relies a lot on CEL (shocker) to dynamically bind roles #rbac #authz
+
+Some ideas are to restrict RBAC by label selectors, subject X can do Y with Z matching label selector Ä #authz #rbac
+
+
+ We can define image pull secrets either for service accounts or as a secret. And we can of course configure the container runtime to access private repositories. If the image isn't already available on a node, it will use that secret to fetch it. But if you want to have different tenants with access to different container registries, it may be an issue of the image has already been fetched/cached. The cache check is bypassed if imagePullPolicy is set to "Always" and thereby enforces the privilege check. There is an manipulating admission controller that sets it to "Always" to enforce this. Doing so however puts the image repositories in the "critical path", meaning pods cannot be created if the repositories are inaccessible. There is some work to solve this by checking if the NS has access to a image pull secret that could be used to fetch the image without pinging the repository everytime, but not yet #secrets #trivia #containersec #authz #privesc #tenancy
+
+"sig-auth" is a Kubernetes special interest group working on a lot of security stuff besides authn/authz. Any other relevant sigs to keep an eye on? #todo #trivia
+
+Document how long Kubernetes minor releases are supported, how long can we wait to upgrade while still getting security patches. Kubernetes doesn't touch major version #triva #hardening #todo
+
+Look into the K9S demo tool #trivia #todo
+
+The selfsubject review can be used to enumerate which user you are and groups memberships (and thereby role bindings). Useful if you get a hold of some creds, mayhaps something that could trigger an alert if used #authn #detection #methodology
+
+KMS version 2 became GA in 1.29. Change configuration, perhaps? Uses AES GCM, include metadata about which key was used to encrypt which data. When will this be GA? #hardening #secrets #todo
+
+EncryptionConfiguration can use multiple providers. Except KMS version 1 and KMS version 2, which rely on external providers, we can encrypt data using a key stored on the API server nodes. We can choose between AES CBC mode, AES GCM mode and "secretbox" (XSalsa20 + Poly1305) #hardening
+
+
+Since version 1.27, we can utilize encryption configuration for all resource types stored in etcd, including CRDs. We can filter on API group and resource kind #secrets #hardening #ctrlplane
+
+
+Look into KEP 3766, "reference grant" #todo
+
+Look into "role aggregation" #todo
+
+A quirk with verbs is that users with list privileges implicitly have get privileges - for example, if we can list secrets, we can get secrets #authz #rbac #trivia
+
+etcd is a highly available key value store built on the "bbolt" library. It's the persistent storage layer for the Kubernetes control plane so the one who owns etcd owns Kubernetes #etcd #ctrlplane #privesc
+
+Copy demos from Proton notes showing using etcdctl and auger to do nasty things with backups/online access to etcd #etcd #demos
+
+Kubernetes provides a feature where you can select to encrypt certain objects before they are stored in etcd. This can be used as risk minimization to prevent backups of etcd being lost leading to total pwnage. You can do this with AES CBC and a local key on disk, or via KMS plugin. #etcd #hardening
+
+Encrypting data in etcd does not necessarily protect against "online" compromise of etcd with the ability to inject objects. Not all object types are encrypted (probably, possible with configuration) and EncryptionConfiguration is often setup to be backwards compatible (still read/use plain-text objects to support accessing thoses created before encryption was enabled) #hardening #secrets #privesc #etcd
+
+When enabling EncryptionConfiguration for an API group (and object kind), beware that objects of that group/kind created before the configuration will still remain unencrypted. To fix this, run "kubectl get $KIND --all-namespaces -o json | kubectl replace -f -" #secrets #hardening
+
+etcd has two "interfaces" - one for peers and one for clients. The peer interface supports authentication modes: none or mTLS. The client interface supports authentication modes: none, username + password or mTLS #etcd #authn
+
+To utilize username + password authentication on the client interface, we must enable "auth" mode via the etcd client API. This will also enable authorization (RBAC). Credentials and privileges are configured via the etcd client API, not any configuration file #etcd #authn #authz
+
+We can use the RBAC support (provided by enabling auth) for mutual TLS as well. We must first create a user using the etcd client API (without a password) - when authentication with mTLS, the common name will be used as the username #etcd #authn #authz
+
+For mutual TLS authentication on the client interface, the certificate must have the extended usage "client authentication". Server can be configured to look at a CRL file for revocation checks #authn #etcd
+
+When mutual TLS authentication is enabled, no request will be permitted either on the client or peer "interfaces" - that includes debug endpoints #etcd #authn
+
+etcd supports two "protocol version" for the client interface - version 2 (legacy, soon to be removed*) and version 3. v2 relies on HTTP/HTTPS and JSON, v3 on gRPC (HTTPv2). How authentication works has changed in v3, will not cover v2, out of scope #etcd #authn
+
+A proxy software exist to support accessing etcd version over regular HTTP(S) REST #etcd 
+
+When you use username and password authentication there's basically an endpoint where you send your creds and get a token back. This token can be configured to either be in a mode they call simple (which they don't recommend people to use but it's the default) or a JWT. Simple tokens use a home baked solution where they generates stateful tokens, 16 character long random A-Za-z string, valid for 5 minutes. JWT mode uses the go-jwt library, so it supports both symmetric and asymmetric signing, they have disabled "none" alg. #etcd #authn
+
+Kubernetes data is stored in a serialized binary format in etcd. This is a change
+historically it was stored as just basic JSON data in etcd so it was fairly trivial to manipulate and interact with, but for performance reasons they have changed that so now you need another tool to encode or decode called auger. It inputs/outputs binary/JSON/YAML #etcd #demos
+
+Protocol version 2 has been disabled by default since version 3.4 of etcd (September 2019 upstream) #etcd #trivia
+
+Unless authentication is disabled on the peer interface, the cluster member discovery feature shouldn't have any security impact #etcd
+ 
+Avoid providing direct access (as opposed to CRDs) to the same etcd cluster for "other components", like Calico and Cilium. Authorization controls have historically been leaky. Calico running on a regular node could allow attacker pivot into etcd and manipulate etcd data #etcd #privesc
+
+Document command to audit RBAC configuration #etcd #todo
+
+Even when mTLS is used, we can also provide a u+p, in which case u+p takes precedence. Therefore dangerous to have accounts with a password configured even with mTLS enabled #etcd #authn
+
+For TLS peer authentication, no CN-to-hostname checking is done. We can configure it to look for a specific CN in all peer certs, for example "etcd-peer". Probably best to use a dedicated CA for peer authentication, not the same used kubelets etc #authn #etcd #hardening
+
+If "auth" mode is enabled in etcd, the CN of certificates used for mTLS on the client interface must match a configured user in etcd #etcd #authn
+
+As of version 3.5, protocol version 2 can still be enabled. Documentation claims this will be removed in 3.6 #etcd #trivia
+
+With the RBAC system, you can three privileges: read, write and read-write. These can be specified for a specific key path or key path prefix #etcd #authz
+
+You cannot enable the auth module without creating a user called "root" with a configured role, but you can create it without a password (--no-password") #etcd #authn
+
+When a user is created without a password (--no-password), it doesn't mean that you can authenticate without a password, just that password-based authentication will not be usable. Suitable if we rely on mTLS #etcd #authn
+
+The auth module (and thereby u+p authenticaton) can only be enabled via the etcd client API, not a configuration file or command line arguments. This means that must first expose the server without authentication before we can enable it, not excellent. To prevent this, we must enforce mTLS on the client interface #etcd #authn #trivia
+
+For u+p authentication, etcd uses bcrypt with weight 10 by default #etcd #authn
+
+Document command used to audit user accounts with a configured password #etcd #authn #todo
+
+If an attacker have had direct access to etcd or compromised the underlying hosts, attempting recovery is not recommended. Setup a clean cluster instead, if a possibility #etcd #recovery

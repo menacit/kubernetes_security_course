@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: © 2025 Menacit AB <foss@menacit.se>
+# SPDX-License-Identifier: CC-BY-SA-4.0
+
+[all:vars]
+ansible_user=ubuntu
+ansible_become=true
+ansible_ssh_private_key_file=_state/id_ed25519
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=_state/ssh_fpr'
+lb_address=${lb_address}
+
+[masters]
+%{ for index, name in master_names ~}
+${name} ansible_host=${master_addresses[index]}
+%{ endfor ~}
+
+[workers]
+%{ for index, name in worker_names ~}
+${name} ansible_host=${worker_addresses[index]}
+%{ endfor ~}

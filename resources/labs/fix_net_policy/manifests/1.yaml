@@ -1,0 +1,28 @@
+---
+# SPDX-FileCopyrightText: © 2025 Menacit AB <foss@menacit.se>
+# SPDX-License-Identifier: CC-BY-SA-4.0
+# X-Context: Kubernetes security course - Lab exercise: "fix_net_policy" - 1.yaml
+# -------------------------------------------------------------------------------------------------
+# Intended purpose:
+# Permit TCP traffic on port 8443 to pods with the label "application=bank-backend" from pods with
+# the label "application=authentication-proxy" in a namespace called "lab-fix-net-policy-1-2".
+# Deny all other egress traffic.
+#
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  namespace: lab-fix-net-policy-1-1
+  name: example-1
+spec:
+  podSelector:
+    matchLabels:
+      application: bank-backend
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: lab-fix-net-policy-1-2
+      - podSelector:
+          matchLabels:
+            application: authentication-proxy
+  egress: []

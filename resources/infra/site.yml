@@ -1,0 +1,296 @@
+---
+# SPDX-FileCopyrightText: © 2025 Menacit AB <foss@menacit.se>
+# SPDX-License-Identifier: CC-BY-SA-4.0
+# X-Context: Kubernetes security course
+- name: "Prepare master and worker nodes"
+  hosts: "all"
+  tasks:
+    # ---------------------------------------------------------------------------------------------
+    - name: "Ensure that kernel modules for overlay and bridge filtering are loaded"
+      community.general.modprobe:
+        name: "{{ item }}"
+        persistent: "present"
+        state: "present"
+      loop:
+        - "overlay"
+        - "br_netfilter"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Configure sysctls for IP forwarding and bridge filtering"
+      ansible.posix.sysctl:
+        name: "{{ item }}"
+        value: "1"
+        sysctl_set: true
+        state: "present"
+      loop:
+        - "net.bridge.bridge-nf-call-iptables"
+        - "net.bridge.bridge-nf-call-ip6tables"
+        - "net.ipv4.ip_forward"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Install dependency packages for adding Docker/Kubernetes APT repository"
+      ansible.builtin.apt:
+        name:
+          - "ca-certificates"
+          - "gpg"
+        force_apt_get: true
+        install_recommends: false
+        cache_valid_time: 900
+        lock_timeout: 300
+        state: "present"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Configure GPG signing key for Docker APT repository (for containerd)"
+      ansible.builtin.apt_key:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        id: "9DC858229FC7DD38854AE2D88D81803C0EBFCD88"
+        keyring: "/usr/share/keyrings/docker_inc.gpg"
+        state: "present"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Configure GPG signing key for Kubernetes APT repository"
+      ansible.builtin.apt_key:
+        url: "https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key"
+        id: "DE15B14486CD377B9E876E1A234654DA9A296436"
+        keyring: "/usr/share/keyrings/kubernetes.gpg"
+        state: "present"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Configure Docker APT repository (for containerd)"
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [signed-by=/usr/share/keyrings/docker_inc.gpg]
+          https://download.docker.com/linux/ubuntu jammy stable
+        state: "present"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Configure Kubernetes APT repository (v1.32)"
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [signed-by=/usr/share/keyrings/kubernetes.gpg]
+          https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /
+        state: "present"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Install system packages"
+      ansible.builtin.apt:
+        name:
+          - "containerd.io"
+          - "golang-cfssl"
+          - "openssl"
+          - "pollinate"
+          - "tcpdump"
+          - "yamllint"
+          - "kubelet"
+          - "kubeadm"
+          - "kubectl"
+        force_apt_get: true
+        install_recommends: false
+        cache_valid_time: 900
+        lock_timeout: 300
+        state: "present"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Configure containerd to use systemd as cgroup driver"
+      ansible.builtin.copy:
+        src: "etc/containerd/config.toml"
+        dest: "/etc/containerd/config.toml"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+      register: "containerd_configuration_file"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Restart containerd if configuration file has changed" # noqa no-handler
+      ansible.builtin.systemd:
+        name: "containerd.service"
+        state: "restarted"
+      when: "containerd_configuration_file.changed"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Generate shell completion for kubectl and kubeadm"
+      ansible.builtin.shell:
+        cmd: "{{ item }} completion bash > /etc/bash_completion.d/{{ item }}"
+        creates: "/etc/bash_completion.d/{{ item }}"
+      loop:
+        - "kubectl"
+        - "kubeadm"
+# -------------------------------------------------------------------------------------------------
+- name: "Check if cluster is initialized"
+  hosts: "master-1"
+  gather_facts: false
+  tasks:
+    # ---------------------------------------------------------------------------------------------
+    - name: "Checking if kubeadm admin.conf exists"
+      ansible.builtin.stat:
+        path: "/etc/kubernetes/admin.conf"
+      register: "kubeadm_admin_file"
+# -------------------------------------------------------------------------------------------------
+- name: "Initialize first master node"
+  hosts: "master-1"
+  gather_facts: false
+  tasks:
+    # ---------------------------------------------------------------------------------------------
+    - name: "End initialization play if cluster is already setup"
+      ansible.builtin.meta: "end_play"
+      when: "hostvars['master-1'].kubeadm_admin_file.stat.exists"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Generate kubeadm certificate key"
+      ansible.builtin.command:
+        cmd: "kubeadm certs certificate-key"
+      changed_when: true
+      register: "kubadm_certs_command"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Initialize cluster using kubeadm"
+      ansible.builtin.command:
+        cmd: >-
+          kubeadm init
+          --control-plane-endpoint {{ lb_address }}:6443
+          --certificate-key {{ kubadm_certs_command.stdout }} --upload-certs
+          --skip-phases addon/kube-proxy
+      changed_when: true
+    # ---------------------------------------------------------------------------------------------
+    - name: "Extract kubeadm node token and join command"
+      ansible.builtin.command:
+        cmd: "kubeadm token create --print-join-command"
+      changed_when: true
+      register: "kubadm_join_command"
+# -------------------------------------------------------------------------------------------------
+- name: "Join remaining master nodes to control plane" # noqa syntax-check[specific]
+  hosts: "!master-1:masters"
+  serial: 1
+  gather_facts: false
+  tasks:
+    # ---------------------------------------------------------------------------------------------
+    - name: "End initialization play if cluster is already setup"
+      ansible.builtin.meta: "end_play"
+      when: "hostvars['master-1'].kubeadm_admin_file.stat.exists"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Join master node to control plane"
+      ansible.builtin.command:
+        cmd: >-
+          {{ hostvars['master-1'].kubadm_join_command.stdout }}
+          --control-plane
+          --certificate-key {{ hostvars['master-1'].kubadm_certs_command.stdout }}
+      changed_when: true
+# -------------------------------------------------------------------------------------------------
+- name: "Join worker nodes to cluster"
+  hosts: "workers"
+  gather_facts: false
+  tasks:
+    # ---------------------------------------------------------------------------------------------
+    - name: "End initialization play if cluster is already setup"
+      ansible.builtin.meta: "end_play"
+      when: "hostvars['master-1'].kubeadm_admin_file.stat.exists"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Join worker node to cluster"
+      ansible.builtin.command:
+        cmd: "{{ hostvars['master-1'].kubadm_join_command.stdout }}"
+      changed_when: true
+# -------------------------------------------------------------------------------------------------
+- name: "Deploy network probe pods"
+  hosts: "all"
+  gather_facts: false
+  tasks:
+    # ---------------------------------------------------------------------------------------------
+    - name: "Copy HTTP probe server pod manifest"
+      ansible.builtin.copy:
+        src: "etc/kubernetes/manifests/http-probe-server.yml"
+        dest: "/etc/kubernetes/manifests/http-probe-server.yml"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Copy network probes pod manifest"
+      ansible.builtin.template:
+        src: "etc/kubernetes/manifests/network-probes.yml.j2"
+        dest: "/etc/kubernetes/manifests/network-probes.yml"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+# -------------------------------------------------------------------------------------------------
+- name: "Setup Cilium as CNI"
+  hosts: "master-1"
+  gather_facts: false
+  tasks:
+    # ---------------------------------------------------------------------------------------------
+    - name: "End Cilium installation play if cluster is already setup"
+      ansible.builtin.meta: "end_play"
+      when: "hostvars['master-1'].kubeadm_admin_file.stat.exists"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Download Helm release archive (v3.16.4)"
+      ansible.builtin.get_url:
+        url: "https://get.helm.sh/helm-v3.16.4-linux-amd64.tar.gz"
+        checksum: "sha256:fc307327959aa38ed8f9f7e66d45492bb022a66c3e5da6063958254b9767d179"
+        dest: "/tmp/helm-v3.16.4-linux-amd64.tar.gz"
+        mode: "0644"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Unpack Helm release archive (v3.16.4)"
+      ansible.builtin.unarchive:
+        src: "/tmp/helm-v3.16.4-linux-amd64.tar.gz"
+        dest: "/tmp/"
+        creates: "/tmp/linux-amd64"
+        remote_src: true
+    # ---------------------------------------------------------------------------------------------
+    - name: "Copy Helm binary (v3.16.4)"
+      ansible.builtin.copy:
+        src: "/tmp/linux-amd64/helm"
+        dest: "/usr/local/bin/helm"
+        owner: "root"
+        group: "root"
+        mode: "0755"
+        remote_src: true
+    # ---------------------------------------------------------------------------------------------
+    - name: "Download Cilium release archive (v1.16.5)"
+      ansible.builtin.get_url:
+        url: "https://github.com/cilium/cilium/archive/refs/tags/v1.16.5.tar.gz"
+        checksum: "sha256:0f2a3ed12a7ac58a0f3f8c526ba7cacff5a7104914bf83807976a7006e8d53e0"
+        dest: "/tmp/cilium-1.16.5.tar.gz"
+        mode: "0644"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Unpack Cilium release archive (v1.16.5)"
+      ansible.builtin.unarchive:
+        src: "/tmp/cilium-1.16.5.tar.gz"
+        dest: "/tmp/"
+        creates: "/tmp/cilium-1.16.5"
+        remote_src: true
+    # ---------------------------------------------------------------------------------------------
+    - name: "Install Cilium using Helm (v1.16.5)"
+      ansible.builtin.command:
+        cmd: >-
+          helm install cilium /tmp/cilium-1.16.5/install/kubernetes/cilium
+          --namespace kube-system
+          --set kubeProxyReplacement=true
+          --set k8sServiceHost={{ lb_address }}
+          --set k8sServicePort=6443
+          --set encryption.enabled=true
+          --set encryption.type=wireguard
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+      changed_when: true
+    # ---------------------------------------------------------------------------------------------
+    - name: "Download Cilium CLI release archive (v0.16.22)"
+      ansible.builtin.get_url:
+        url: >-
+          https://github.com/cilium/cilium-cli/releases/download/v0.16.22/cilium-linux-amd64.tar.gz
+        checksum: "sha256:8bd9faae272aef2e75c686a55de782018013098b66439a1ee0c8ff1e05c5d32c"
+        dest: "/tmp/cilium-linux-amd64.tar.gz"
+        mode: "0644"
+    # ---------------------------------------------------------------------------------------------
+    - name: "Unpack Cilium CLI release archive (v0.16.22)"
+      ansible.builtin.unarchive:
+        src: "/tmp/cilium-linux-amd64.tar.gz"
+        dest: "/usr/local/bin/"
+        creates: "/usr/local/bin/cilium"
+        remote_src: true
+    # ---------------------------------------------------------------------------------------------
+    - name: "Validate Cilium installation"
+      ansible.builtin.command:
+        cmd: "cilium status --wait"
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+      changed_when: true
+    # ---------------------------------------------------------------------------------------------
+    - name: "Ensure that Kubernetes DNS pods are cycled to pickup CNI"
+      ansible.builtin.command:
+        cmd: "kubectl --namespace kube-system delete pods --selector k8s-app=kube-dns"
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+      changed_when: true
+    # ---------------------------------------------------------------------------------------------
+    - name: "Validate Cilium connectivity"
+      ansible.builtin.command:
+        cmd: "cilium connectivity test --test health"
+      environment:
+        KUBECONFIG: "/etc/kubernetes/admin.conf"
+      changed_when: true

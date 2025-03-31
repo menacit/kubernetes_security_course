@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "data": {
+    "description": "Kubernetes security course: Quiz #1",
+    "freeform_questions": [
+      {
+        "prompt": "Describe a valid risk associated with usage of external webhook authentication",
+        "correction_templates": []
+      }
+    ],
+    "alternative_questions": [
+      {
+        "prompt": "Which of the following is NOT a valid profile in Pod Security Standards?",
+        "alternatives": [
+          "privileged",
+          "restricted",
+          "default"
+        ],
+        "answer": "default"
+      }
+    ]
+  }
+}

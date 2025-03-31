@@ -1,0 +1,19 @@
+---
+# SPDX-FileCopyrightText: © 2025 Menacit AB <foss@menacit.se>
+# SPDX-License-Identifier: CC-BY-SA-4.0
+apiVersion: "v1"
+kind: "Pod"
+metadata:
+  name: "http-probe-server"
+  namespace: "kube-system"
+spec:
+  tolerations:
+    - operator: "Exists"
+  hostNetwork: true
+  containers:
+    - name: "http-probe-server"
+      image: "docker.io/hashicorp/http-echo"
+      imagePullPolicy: "IfNotPresent"
+      args:
+        - "-listen=:1080"
+        - "-text=ALIVE"
