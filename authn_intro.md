@@ -30,10 +30,22 @@ style: |
 
 ---
 <!-- _footer: "%ATTRIBUTION_PREFIX% Adam Lusch (CC BY-SA 2.0)" -->
-....first
-....TODO: Slide about almost everything going through API server.
+When we talk about authentication
+in Kubernetes, we primarily refer
+to authentication in the API server.  
 
-That will be our focus for these slides
+Developers/administrators use it
+to create and query resources.  
+
+Control plane components like the
+scheduler use it to find workloads
+for... well, scheduling.  
+
+The kubelet, kube-proxy and other
+node components talk to it as well.  
+
+_(more about authentication against the
+kubelet's own API in another chapter)_
 
 ![bg right:30%](images/rusty_x_chain.jpg)
 
@@ -41,80 +53,127 @@ That will be our focus for these slides
 -->
 
 ---
-<!-- _footer: "%ATTRIBUTION_PREFIX% " -->
-TODO: Slide about Users and ServiceAccounts,
+<!-- _footer: "%ATTRIBUTION_PREFIX% Gobi (CC BY 2.0)" -->
+There exist two identity subject types:
+**"users"** and **"service accounts"**.  
 
-![bg right:30%](images/.jpg)
-
-<!--
--->
-
----
-<!-- _footer: "%ATTRIBUTION_PREFIX% " -->
-TODO: ServiceAccounts are created in a namespace,
-no group memberships, exists as objects in Kubernetes,
-meant for workloads running inside the cluster that
-needs access to the API server or third-party services
-that rely on it for authentication, always a 
-service account called "default" in each namespace,
-if you remove it is recreated
-
-
-![bg right:30%](images/.jpg)
+![bg right:30%](images/neon_cyborg.jpg)
 
 <!--
 -->
 
 ---
-<!-- _footer: "%ATTRIBUTION_PREFIX% " -->
-TODO: slide about users.
-Nodes/control plane components are also users,
-Users have a name and can be a member of multiple groups,
-No inherited group membership,
-no difference between user between authenticators - but authenticators can add "extras",
-like a fingerprint/ID for token used etcd.
+<!-- _footer: "%ATTRIBUTION_PREFIX% Rod Waddington (CC BY-SA 2.0)" -->
+Service accounts are primarily\* used to
+provide API server access for workloads
+running on top of Kubernetes.  
 
+An application running in a pod may
+want to query available services.  
 
-![bg right:30%](images/.jpg)
+Created as a namespace-bound object.  
 
-<!--
--->
+Always exist at least one called
+"default" in each namespace.  
+  
+_(shouldn't be used by humans)_
 
----
-<!-- _footer: "%ATTRIBUTION_PREFIX% " -->
-TODO: Slide about unauthenticated requests
-being done with the user "system:anonymous" and
-the group "system:unauthenticated". Access /healthz
-
-
-![bg right:30%](images/.jpg)
+![bg right:30%](images/robot_streetart.jpg)
 
 <!--
 -->
 
 ---
-<!-- _footer: "%ATTRIBUTION_PREFIX% " -->
+<!-- _footer: "%ATTRIBUTION_PREFIX% Stig Nygaard (CC BY 2.0)" -->
+Every other authentication subject
+is simply a "user".
+
+No difference if user is a human,
+a CI/CD tool, the kublet on a node
+or a control plane component.  
+
+A user can be member of multiple groups.  
+
+_(no support for nested groups)_
+
+![bg right:30%](images/little_tilde.jpg)
+
+<!--
+-->
+
+---
+<!-- _footer: "%ATTRIBUTION_PREFIX% Torkild Retvedt (CC BY-SA 2.0)" -->
 ## Available authenticators\*
 - Proxy request headers
 - Simple tokens
-- Mutual TLS ("client certificate")
+- Mutual TLS ("client certificates")
 - OpenID Connect
 - External webhook
 - Bootstrap tokens
-- Service account tokens
+- _Service account tokens_
 
-
-![bg right:30%](images/.jpg)
+![bg right:30%](images/curious_cameleon.jpg)
 
 <!--
 -->
 
 ---
-<!-- _footer: "%ATTRIBUTION_PREFIX% " -->
-TODO: Outro, dig into pros/cons
+<!-- _footer: "%ATTRIBUTION_PREFIX% Halfrain (CC BY-SA 2.0)" -->
+Beside a name and group memberships,
+the authentication can add arbitrary
+attributes to the "UserInfo" object.  
 
+Fingerprint/Serial of used certificate,
+information about which methods were
+used multifactor authentication,
+device attestation status, etc!
 
-![bg right:30%](images/.jpg)
+Available in audit logs and for
+(custom) authorization modules.
+
+![bg right:30%](images/vintage_machine.jpg)
+
+<!--
+-->
+
+---
+<!-- _footer: "%ATTRIBUTION_PREFIX% Randy Adams (CC BY-SA 2.0)" -->
+Requests without authentication information
+are assigned the user "system:anonymous" and
+a group membership in "system:unauthenticated".  
+
+Useful for providing access to endpoints
+like "/healthz" and "/metrics", but scary.
+
+![bg right:30%](images/abstract_pattern_grey.jpg)
+
+<!--
+-->
+
+---
+<!-- _footer: "%ATTRIBUTION_PREFIX% Randy Adams (CC BY-SA 2.0)" -->
+## Limitations and gotchas
+Users don't exist as API resources.  
+
+Not possible to query users with access,
+group memberships and similar.
+
+No difference between user "ada" from
+the mTLS authenticator and "ada"
+from the OIDC authentication.
+
+![bg right:30%](images/abandoned_car_window.jpg)
+
+<!--
+-->
+
+---
+<!-- _footer: "%ATTRIBUTION_PREFIX% Adam Lusch (CC BY-SA 2.0)" -->
+We shall dig deeper into the available
+authenticators, look at how they work,
+their pros/cons and usage considerations.
+
+![bg right:30%](images/rusty_x_chain.jpg)
 
 <!--
 -->
