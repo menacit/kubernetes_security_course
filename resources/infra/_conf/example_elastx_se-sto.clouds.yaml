@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2025 Menacit AB <foss@menacit.se>
+# SPDX-License-Identifier: CC0-1.0
+
+# Example configuration for OpenStack cloud: Elastx - se-sto region
+clouds:
+  "openstack":
+    region_name: "se-sto"
+    interface: "public"
+    identity_api_version: 3
+    auth_type: "v3applicationcredential"
+    auth:
+      auth_url: "https://ops.elastx.cloud:5000"
+      application_credential_id: "<YOUR_APPCRED_ID>"
+      application_credential_secret: "<YOUR_APPCRED_SECRET>"
