@@ -120,7 +120,7 @@ _(no support for nested groups)_
 ---
 <!-- _footer: "%ATTRIBUTION_PREFIX% Halfrain (CC BY-SA 2.0)" -->
 Beside a name and group memberships,
-the authentication can add arbitrary
+the authenticator can add arbitrary
 attributes to the "UserInfo" object.  
 
 Fingerprint/Serial of used certificate,
@@ -144,6 +144,9 @@ a group membership in "system:unauthenticated".
 
 Useful for providing access to endpoints
 like "/healthz" and "/metrics", but scary.
+
+[KEP #4633](https://github.com/kubernetes/enhancements/issues/4633) aims to minimize
+the risk of this foot-gun.
 
 ![bg right:30%](images/abstract_pattern_grey.jpg)
 
