@@ -120,6 +120,15 @@ Recommended to drop header prefixes like
 -->
 
 ---
+## Detection recommendation
+- Unexpected attempts to bypass authentication proxy by directly communicating with API server
+- Attempts to supply user/group/extra headers (post-authentication)
+- Unexpected group headers from authentication proxy (like "system:nodes" and "system:masters")
+
+<!--
+-->
+
+---
 <!-- _footer: "%ATTRIBUTION_PREFIX% Asparukh Akanayev (CC BY 2.0)" -->
 ## Wrapping up
 Simple to use, non-trivial to get right.

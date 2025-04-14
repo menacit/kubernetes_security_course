@@ -29,7 +29,15 @@ style: |
 
 ---
 <!-- _footer: "%ATTRIBUTION_PREFIX% Guilhem Vellut (CC BY 2.0)" -->
-....first
+By specifying `--token-auth-file=users.csv`
+as an argument to the API server, we can
+define users in a simple text file:
+
+> token,user,uid,"group-1,group-2"
+
+Trivial to add users and revoke access.  
+  
+Provided as a "bearer token" by clients.
 
 ![bg right:30%](images/abandoned_door.jpg)
 
@@ -37,28 +45,17 @@ style: |
 -->
 
 ---
-<!-- _footer: "%ATTRIBUTION_PREFIX% " -->
-TODO: Expected file content
+<!-- _footer: "%ATTRIBUTION_PREFIX% Johan Neven (CC BY 2.0)" -->
+# The downsides
+You'll have to generate the tokens.
 
-![bg right:30%](images/.jpg)
+No hashing of stored tokens,
+increased risk of leakage.
 
-<!--
--->
+Not hot-reloadable, requires restart
+of the API server (not so scalable).
 
----
-<!-- _footer: "%ATTRIBUTION_PREFIX% " -->
-TODO: Example usage with cURL
-
-![bg right:30%](images/.jpg)
-
-<!--
--->
-
----
-<!-- _footer: "%ATTRIBUTION_PREFIX% " -->
-TODO: Downsides, no hashing, requires restart to change/revoke access
-
-![bg right:30%](images/.jpg)
+![bg right:30%](images/rusty_guard.jpg)
 
 <!--
 -->
