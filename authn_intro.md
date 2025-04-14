@@ -138,6 +138,9 @@ Available in audit logs and for
 
 ---
 <!-- _footer: "%ATTRIBUTION_PREFIX% Randy Adams (CC BY-SA 2.0)" -->
+All successfully authenticated users become
+members of the "system:authenticated" group.
+
 Requests without authentication information
 are assigned the user "system:anonymous" and
 a group membership in "system:unauthenticated".  
