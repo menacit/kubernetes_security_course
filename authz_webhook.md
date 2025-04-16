@@ -19,20 +19,20 @@ style: |
   }
 
 ---
-<!-- _footer: "%ATTRIBUTION_PREFIX% Micah Elizabeth Scott (CC BY-SA 2.0)" -->
+<!-- _footer: "%ATTRIBUTION_PREFIX% Asparukh Akanayev (CC BY 2.0)" -->
 # Webhook authorization
 ### External access control
 
-![bg right:30%](images/solder_pcb.jpg)
+![bg right:30%](images/purple_building_reflection.jpg)
 
 <!--
 -->
 
 ---
-<!-- _footer: "%ATTRIBUTION_PREFIX% Micah Elizabeth Scott (CC BY-SA 2.0)" -->
+<!-- _footer: "%ATTRIBUTION_PREFIX% Asparukh Akanayev (CC BY 2.0)" -->
 ....first
 
-![bg right:30%](images/solder_pcb.jpg)
+![bg right:30%](images/purple_building_reflection.jpg)
 
 <!--
 -->

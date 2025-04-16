@@ -19,17 +19,17 @@ style: |
   }
 
 ---
-<!-- _footer: "%ATTRIBUTION_PREFIX% Kristina Hoeppner (CC BY-SA 2.0)" -->
+<!-- _footer: "%ATTRIBUTION_PREFIX% William Warby (CC BY 2.0)" -->
 # mTLS authentication
 ### Access using "client certificates"
 
-![bg right:30%](images/metal_sheep.jpg)
+![bg right:30%](images/abstract_face_mural.jpg)
 
 <!--
 -->
 
 ---
-<!-- _footer: "%ATTRIBUTION_PREFIX% Kristina Hoeppner (CC BY-SA 2.0)" -->
+<!-- _footer: "%ATTRIBUTION_PREFIX% William Warby (CC BY 2.0)" -->
 Simple-to-use authentication mechanism
 based on X.509 certificates and mutual TLS.  
 
@@ -39,7 +39,7 @@ node services (kubelet, kube-proxy, etc.).
 May be utilized for human users as well,
 as demonstrated by kubeadm.
 
-![bg right:30%](images/metal_sheep.jpg)
+![bg right:30%](images/abstract_face_mural.jpg)
 
 <!--
 -->
@@ -150,10 +150,10 @@ _(neither option is however perfect_)
 -->
 
 ---
-<!-- _footer: "%ATTRIBUTION_PREFIX% Kristina Hoeppner (CC BY-SA 2.0)" -->
+<!-- _footer: "%ATTRIBUTION_PREFIX% William Warby (CC BY 2.0)" -->
 ## Wrapping up
 
-![bg right:30%](images/metal_sheep.jpg)
+![bg right:30%](images/abstract_face_mural.jpg)
 
 <!--
 -->

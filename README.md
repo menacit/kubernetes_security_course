@@ -33,6 +33,7 @@ During research/development of the course, several tools and supporting material
 The list below contain links to their dedicated repositories:
 
 - [k8s\_ephemeral\_mimic](https://github.com/menacit/k8s_ephemeral_mimic)
+- [k8s\_resource\_audit](https://github.com/menacit/k8s_resource_audit)
 - [k8s\_crlish\_authorizer](https://github.com/menacit/k8s_crlish_authorizer)
 - [kubernetes\_introduction](https://github.com/menacit/kubernetes_introduction)
 - [demo\_apps](https://github.com/menacit/demo_apps)
