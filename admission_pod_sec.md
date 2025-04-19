@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 title: "Kubernetes security course: Pod security standards"
 author: "Joel Rangsmo <joel@menacit.se>"
 footer: "© Course authors (CC BY-SA 4.0)"
-description: "Presentation about pod security standards for Kubernetes security course"
+description: "Presentation about pod security admission for Kubernetes security course"
 keywords:
   - "kubernetes"
   - "k8s"
@@ -20,7 +20,7 @@ style: |
 
 ---
 <!-- _footer: "%ATTRIBUTION_PREFIX% Jeena Paradies (CC BY 2.0)" -->
-# Pod security standards
+# Pod security admission
 ### Enforcing hardening/isolation
 
 ![bg right:30%](images/frosty_lion.jpg)

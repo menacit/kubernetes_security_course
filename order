@@ -32,9 +32,9 @@ priv_esc_intro.md
 
 net_policy.md
 pod_sec.md
-pod_sec_standards.md
 quotas.md
 admission_intro.md
+admission_pod_sec.md
 admission_vap.md
 admission_webhook.md
 
