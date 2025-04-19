@@ -5,7 +5,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 title: "Kubernetes security course: Air gapping"
 author: "Joel Rangsmo <joel@menacit.se>"
 footer: "© Course authors (CC BY-SA 4.0)"
-description: "Presentation about running Kubernetes on an air gapped network"
+description: "Presentation about running Kubernetes on an air-gapped network"
 keywords:
   - "kubernetes"
   - "k8s"

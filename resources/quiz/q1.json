@@ -1,22 +1,232 @@
 {
-  "version": 2,
+  "version": 3,
   "data": {
     "description": "Kubernetes security course: Quiz #1",
     "freeform_questions": [
       {
         "prompt": "Describe a valid risk associated with usage of external webhook authentication",
-        "correction_templates": []
+        "correction_templates": [
+          "Answer does not describe a risk",
+          "Answer relates to webhook authorization, not authentication"
+        ]
       }
     ],
     "alternative_questions": [
       {
         "prompt": "Which of the following is NOT a valid profile in Pod Security Standards?",
         "alternatives": [
+          "default",
           "privileged",
-          "restricted",
-          "default"
-        ],
-        "answer": "default"
+          "restricted"
+        ]
+      },
+      {
+        "prompt": "Setting \"pod.spec.hostNetwork\" to true...",
+        "alternatives": [
+          "May permit bypass of configured network policies",
+          "Enables usage of CNI",
+          "Adds an additional network interface in the pod"
+        ]
+      },
+      {
+        "prompt": "\"Ephemeral containers\"...",
+        "alternatives": [
+          "May only be added to running pods",
+          "Are exclude from a pod's resource usage",
+          "Can't be created through the API server"
+        ]
+      },
+      {
+        "prompt": "Pod security standards are enforced by...",
+        "alternatives": [
+          "An admission controller",
+          "A webhook authorizer",
+          "Attribute-based access control"
+        ]
+      },
+      {
+        "prompt": "Pod security standards can be used to restrict usage of...",
+        "alternatives": [
+          "Volume types",
+          "Network policies",
+          "Runtime class"
+        ]
+      },
+      {
+        "prompt": "Custom AppArmor/SELinux/seccomp profiles are...",
+        "alternatives": [
+          "Not automatically distributed to nodes by default",
+          "Required by the \"hardened\" profile in pod security standards",
+          "Defined as resources in the \"apps/v1\" API group"
+        ]
+      },
+      {
+        "prompt": "The X.509 authenticator depends on...",
+        "alternatives": [
+          "mTLS",
+          "A Kubernetes extension",
+          "Validation of service account tokens"
+        ]
+      },
+      {
+        "prompt": "The X.509 authenticatior does NOT support...",
+        "alternatives": [
+          "Validation against a CRL",
+          "Certificates signed with RSA",
+          "Extracting a \"credential ID\""
+        ]
+      },
+      {
+        "prompt": "Members of which group automatically bypass authorization checks?",
+        "alternatives": [
+          "system:masters",
+          "system:nodes",
+          "cluster-admin"
+        ]
+      },
+      {
+        "prompt": "A \"credential ID\" from the X.509 authenticator consist of...",
+        "alternatives": [
+          "A hash digest of the utilized certificate",
+          "The client certificate's serial number",
+          "A randomly generated number"
+        ]
+      },
+      {
+        "prompt": "Admission controllers can NOT be used to restrict...",
+        "alternatives": [
+          "Read",
+          "Write",
+          "Delete"
+        ]
+      },
+      {
+        "prompt": "By default, containers in a pod share...",
+        "alternatives": [
+          "A network namespace",
+          "Configured volume mounts",
+          "Execution UID"
+        ]
+      },
+      {
+        "prompt": "gVisor aims to strengthen isolation by...",
+        "alternatives": [
+          "Proxying system calls",
+          "Utilizing hardware-level virtualisation",
+          "Running containers as WASM applications"
+        ]
+      },
+      {
+        "prompt": "Kata Containers aims to strengthen isolation by...",
+        "alternatives": [
+          "Utilizing hardware-level virtualisation",
+          "Proxying system calls",
+          "Running containers as WASM applications"
+        ]
+      },
+      {
+        "prompt": "The \"Konnectivity\" addon aims to...",
+        "alternatives": [
+          "Simplify network communication in a cluster",
+          "Provide \"service mesh\" functionality in Kubernetes",
+          "Help protect traffic between pods"
+        ]
+      },
+      {
+        "prompt": "Which of the following is NOT a valid audit event level?",
+        "alternatives": [
+          "Body",
+          "Metadata",
+          "RequestResponse"
+        ]
+      },
+      {
+        "prompt": "The \"ResourceQuota\" feature can be used to...",
+        "alternatives": [
+          "Restrict usage of NodePort services",
+          "List available API resources",
+          "Limit amount of pods with a specific security standard level"
+        ]
+      },
+      {
+        "prompt": "Which of the following is NOT a built-in authorizer?",
+        "alternatives": [
+          "Pod",
+          "Node",
+          "RBAC"
+        ]
+      },
+      {
+        "prompt": "Kubernetes does NOT support authentication using...",
+        "alternatives": [
+          "Username and password",
+          "HTTP request headers",
+          "OpenID Connect"
+        ]
+      },
+      {
+        "prompt": "For peer authentication, etcd supports...",
+        "alternatives": [
+          "mTLS",
+          "Username and password",
+          "OpenID Connect"
+        ]
+      },
+      {
+        "prompt": "By default, an \"ephemeral container\" automatically share...",
+        "alternatives": [
+          "Network namespace",
+          "securityContext",
+          "Volume mounts"
+        ]
+      },
+      {
+        "prompt": "The Kublet API server does NOT...",
+        "alternatives": [
+          "Perform certificate revocation checks",
+          "Rely on the Kubernetes API for authorization",
+          "Support token authentication"
+        ]
+      },
+      {
+        "prompt": "etcd does NOT support client authentication using...",
+        "alternatives": [
+          "OpenID Connect",
+          "Username and password",
+          "mTLS"
+        ]
+      },
+      {
+        "prompt": "Service account tokens...",
+        "alternatives": [
+          "Are asymmetrically signed",
+          "Must contain an expiry date",
+          "Contain a list of group memberships"
+        ]
+      },
+      {
+        "prompt": "Service account tokens may contain...",
+        "alternatives": [
+          "An expiry date",
+          "A list of group memberships",
+          "A symmetric signature"
+        ]
+      },
+      {
+        "prompt": "Which of the following is NOT a valid pod security admission mode?",
+        "alternatives": [
+          "default",
+          "warn",
+          "enforce"
+        ]
+      },
+      {
+        "prompt": "Everything disallowed by the \"baseline\" level is also disallowed by...",
+        "alternatives": [
+          "\"restricted\"",
+          "\"default\"",
+          "\"privileged\""
+        ]
       }
     ]
   }

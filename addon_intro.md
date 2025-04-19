@@ -30,18 +30,17 @@ style: |
 
 ---
 <!-- _footer: "%ATTRIBUTION_PREFIX% Fredrik Rubensson (CC BY-SA 2.0)" -->
-....first
+For better or worse, Kubernetes is
+extraordinarily extendable.
+
+These addons can help administrators
+improve security and in some cases
+negatively affect it.
+
+The following presentations cover
+some interesting and notable ones.
 
 ![bg right:30%](images/barbwire_beach.jpg)
-
-<!--
--->
-
----
-<!-- _footer: "%ATTRIBUTION_PREFIX% " -->
-....new
-
-![bg right:30%](images/.jpg)
 
 <!--
 -->
