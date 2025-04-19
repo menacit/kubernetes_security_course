@@ -21,7 +21,7 @@ style: |
 ---
 <!-- _footer: "%ATTRIBUTION_PREFIX% Cory Doctorow (CC BY-SA 2.0)" -->
 # Node authorization
-### ...
+### Restricting node privileges
 
 ![bg right:30%](images/houses_art.jpg)
 

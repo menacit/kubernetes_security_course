@@ -81,6 +81,27 @@ Decision: allow, deny or "no opinion".
 -->
 
 ---
+<!-- _footer: "%ATTRIBUTION_PREFIX% Wendelin Jacober (CC0 1.0)" -->
+Kubernetes provides [several APIs](https://kubernetes.io/docs/reference/kubernetes-api/authorization-resources/) to
+"dry-run" actions and evaluate them
+against the configured authorizers.
+
+Utilized by functionality like
+`kubectl auth can-i` to help users
+debug and enumerate their privileges.
+
+External applications like the Kubelet
+and ["kube-rbac-proxy"](https://github.com/brancz/kube-rbac-proxy) piggyback on
+the APIs to delegate authorization.  
+  
+_(very useful for security assessments)_
+
+![bg right:30%](images/abstract_mirror_reflections.jpg)
+
+<!--
+-->
+
+---
 <!-- _footer: "%ATTRIBUTION_PREFIX% Mauricio Snap (CC BY 2.0)" -->
 Users in the group "system:masters"
 bypass all authorization checks.  

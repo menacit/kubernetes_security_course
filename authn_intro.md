@@ -121,7 +121,8 @@ _(no support for nested groups)_
 <!-- _footer: "%ATTRIBUTION_PREFIX% Halfrain (CC BY-SA 2.0)" -->
 Beside a name and group memberships,
 the authenticator can add arbitrary
-attributes to the "UserInfo" object.  
+attributes to the "UserInfo" object
+("extra" list property).  
 
 Fingerprint/Serial of used certificate,
 information about which methods were
@@ -157,6 +158,28 @@ the risk of this foot-gun.
 -->
 
 ---
+<!-- _footer: "%ATTRIBUTION_PREFIX% George N (CC BY 2.0)" -->
+Clients with access to credentials can
+query the ["SelfSubjectReview" API](https://kubernetes.io/docs/reference/kubernetes-api/authentication-resources/self-subject-review-v1/) to
+get their name, groups and whatever
+else the authenticator provided.
+
+Users (with adequate privileges) may
+supply "impersonation headers" to
+override information provided by
+the authenticator - useful for
+debugging and escalation,
+checkout ["kubectl-sudo"](https://github.com/postfinance/kubectl-sudo).
+  
+_(usage of both features can and
+probably should be logged)_
+
+![bg right:30%](images/neon_and_laser.jpg)
+
+<!--
+-->
+
+---
 <!-- _footer: "%ATTRIBUTION_PREFIX% Randy Adams (CC BY-SA 2.0)" -->
 ## Limitations and gotchas
 Users don't exist as API resources.  
@@ -166,7 +189,7 @@ group memberships and similar.
 
 No difference between user "ada" from
 the mTLS authenticator and "ada"
-from the OIDC authentication.
+from the OIDC authentication\*.
 
 ![bg right:30%](images/abandoned_car_window.jpg)
 

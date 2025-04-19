@@ -90,15 +90,6 @@ using the "exec" credential type...
 
 ---
 <!-- _footer: "%ATTRIBUTION_PREFIX% " -->
-TODO: Demo of exec kubeconfig
-
-![bg right:30%](images/.jpg)
-
-<!--
--->
-
----
-<!-- _footer: "%ATTRIBUTION_PREFIX% " -->
 TODO: Using kubelogin with exec credential
 
 ![bg right:30%](images/.jpg)
@@ -108,8 +99,17 @@ TODO: Using kubelogin with exec credential
 
 ---
 <!-- _footer: "%ATTRIBUTION_PREFIX% " -->
+TODO: Demo of exec kubeconfig
+
+![bg right:30%](images/.jpg)
+
+<!--
+-->
+
+---
+<!-- _footer: "%ATTRIBUTION_PREFIX% " -->
 TODO: exploiting kubeconfig,
-link to example.
+link to https://github.com/menacit/k8s_malicious_kubeconfig
 
 ![bg right:30%](images/.jpg)
 

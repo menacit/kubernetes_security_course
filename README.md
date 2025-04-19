@@ -35,6 +35,7 @@ The list below contain links to their dedicated repositories:
 - [k8s\_ephemeral\_mimic](https://github.com/menacit/k8s_ephemeral_mimic)
 - [k8s\_resource\_audit](https://github.com/menacit/k8s_resource_audit)
 - [k8s\_crlish\_authorizer](https://github.com/menacit/k8s_crlish_authorizer)
+- [k8s\_malicious\_kubeconfig](https://github.com/menacit/k8s_malicious_kubeconfig)
 - [kubernetes\_introduction](https://github.com/menacit/kubernetes_introduction)
 - [demo\_apps](https://github.com/menacit/demo_apps)
 
