@@ -477,3 +477,45 @@ For u+p authentication, etcd uses bcrypt with weight 10 by default #etcd #authn
 Document command used to audit user accounts with a configured password #etcd #authn #todo
 
 If an attacker have had direct access to etcd or compromised the underlying hosts, attempting recovery is not recommended. Setup a clean cluster instead, if a possibility #etcd #recovery
+
+Pod security standards are enforced by the pod security admission controller, replacing "pod security policies" which was deprecated due to its complexity #containersec #admission #hardening
+
+Kubernetes gives users flexibility to control sandboxing and security restrictions for pod containers, which is nice but exposes many foot-guns and breakout opportunities #containersec #privesc
+
+Pod security standards minimize foot-shooting risk and intentional breakout attempts #containersec #admission #hardening
+
+Pod security standards and the pod security admission controller are GA since v1.25 #admission #hardening
+
+Pod security standards provide three profile levels: privileged, baseline and restricted. No ability to customize profiles at the moment #admission #containersec
+
+In pod security standards, the "privileged" profile permits everything, the "baseline" profile aims to prevent known breakouts/serious vulnerabilities while trying to ensure compatibility, the "restricted" profile aims to ensure that pods comply with best-practices and may block (yet unknown) breakout techniques #admission #containersec #hardening
+
+Profiles in pod security standards are updated with the same cadence as the Kubernetes release cycle, typically minor version (no patch version necessarily), to mitigate new breakout techniques or handle new features #admission #containersec
+
+Unlike pod security policies, the pod security admission controller does not provide a built-in way to automate manipulation of admitted pods to comply with profiles. Affects ease of you when relying on helm charts and similar #admission
+
+Pod security profiles can be active in different "modes": enforce, warn and audit. "enforce" prevents submission of violating pods and returns an error to the user, "warn" logs the violation and returns a warning to the user, "audit" simply logs the violation #admission
+
+When implementing pod security standards, perhaps it's a good idea to start with "baseline" profile in ""audit" mode, later move it to "enforce" and configure "privileged" profile in "audit" mode #admission #hardening
+
+Maybe it could be a good idea to start with audit to find a suitable baseline, or should
+probably not use baseline there since it's overlapping, but to identify the current requirements
+for your pods, then change to warn and eventually change to enforce.
+
+The pod security standard profiles are "cumulative" - if your pod complies with the "restricted" profile, it will also comply with "baseline", but not necessarily the other way around #admission
+
+"Enforcement mode" of Pod security standard profiles are configured using namespace labels and optionally defaults #admission
+
+For each namespace/defaults, you may specify one or more "enforcement modes" and their matching profile, for example "enforce=baseline" and "warn=restricted" #admission
+
+For each namespace/defaults, you may specify one or more "enforcement modes" and their matching profile versions, for example "enforce=v1.31" and "warn=latest" #admission
+
+The benefit of using "latest" profile version is that newly identified breakouts may have been fixed, but it may break existing workloads (including when managed by replicaset etc). Reduce risk by having a process to perform "rolling restart/rescheduling" of pods after upgrade of control plane nodes #admission
+
+The rules in pod security standards profiles are typically "this property may have these values" or "this property may not have these values" #admisson
+
+To configure default profiles for pod security standards, we must update a static configuration file for pod security admission controller on the API server - may be an issue for managed control planes #admission
+
+In the configuration file for the pod security admission controller, we way exclude enforcement for specific namespaces, usernames (not groups) and runtime classes (like Kata containers, beware though that we may don't want to due to host path sharing etc) #admission
+
+How are pod security admission controller exceptions handled when an excluded user creates a replicaset that creates pods? #admission #todo

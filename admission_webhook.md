@@ -41,7 +41,7 @@ style: |
 <!-- _footer: "%ATTRIBUTION_PREFIX% " -->
 ....new
 
-![bg right:30%](images/.jpg)
+![bg right:30%](images/)
 
 <!--
 -->
