@@ -35,6 +35,7 @@ pod_sec.md
 quotas.md
 admission_intro.md
 admission_pod_sec.md
+admission_misc.md
 admission_vap.md
 admission_webhook.md
 
