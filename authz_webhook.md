@@ -45,3 +45,24 @@ style: |
 
 <!--
 -->
+
+---
+<!-- _footer: "%ATTRIBUTION_PREFIX% Jennifer Morrow (CC BY 2.0)" -->
+Wanna try using it yourself?
+
+Checkout the lab exercise:
+["resources/labs/webhook\_authz"](%RESOURCES_ARCHIVE%).
+
+![bg right:30%](images/purple_mirror_spheres.jpg)
+
+<!--
+-->
+
+---
+<!-- _footer: "%ATTRIBUTION_PREFIX% Asparukh Akanayev (CC BY 2.0)" -->
+## Wrapping up
+
+![bg right:30%](images/purple_building_reflection.jpg)
+
+<!--
+-->

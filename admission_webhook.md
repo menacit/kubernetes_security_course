@@ -45,3 +45,24 @@ style: |
 
 <!--
 -->
+
+---
+<!-- _footer: "%ATTRIBUTION_PREFIX% Rick Harris (CC BY-SA 2.0)" -->
+Wanna try using it yourself?
+
+Checkout the lab exercise:
+["resources/labs/webhook\_admission"](%RESOURCES_ARCHIVE%).
+
+![bg right:30%](images/graffiti_car_bush.jpg)
+
+<!--
+-->
+
+---
+<!-- _footer: "%ATTRIBUTION_PREFIX% Brendan J (CC BY 2.0)" -->
+## Wrapping up
+
+![bg right:30%](images/cyberpunk_wall.jpg)
+
+<!--
+-->

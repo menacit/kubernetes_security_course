@@ -45,3 +45,24 @@ style: |
 
 <!--
 -->
+
+---
+<!-- _footer: "%ATTRIBUTION_PREFIX% Nicholas Day (CC BY 2.0)" -->
+Wanna practice your skills?
+
+Checkout the lab exercise:
+["resources/labs/fix\_net\_policy"](%RESOURCES_ARCHIVE%).
+
+![bg right:30%](images/horizontal_color_glitch.jpg)
+
+<!--
+-->
+
+---
+<!-- _footer: "%ATTRIBUTION_PREFIX% Helsinki Hacklab (CC BY 2.0)" -->
+## Wrapping up
+
+![bg right:30%](images/router_beer_tap.jpg)
+
+<!--
+-->
