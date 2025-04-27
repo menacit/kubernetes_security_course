@@ -4,7 +4,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 X-Context: Kubernetes security course
 -->
 
-# Lab exercise: "webhook_authz"
+# Lab exercise: "webhook\_authz"
 
 
 ## Scenario description
