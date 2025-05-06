@@ -519,3 +519,19 @@ To configure default profiles for pod security standards, we must update a stati
 In the configuration file for the pod security admission controller, we way exclude enforcement for specific namespaces, usernames (not groups) and runtime classes (like Kata containers, beware though that we may don't want to due to host path sharing etc) #admission
 
 How are pod security admission controller exceptions handled when an excluded user creates a replicaset that creates pods? #admission #todo
+
+kube-proxy is a node component used in most clusters to configure DNAT rules (iptables, nftables or IPVS) for service cluster IPs, making them accessible for pods and the node. Also responsible for exposing NodePorts. Some CNIs like Cilium offer an alternative to kube-proxy #net
+
+kube-proxy typically reuse the node's client certificate/key to access the Kubernetes API in order to find endpoint slices etc #net #authn
+
+Your container runtime, kube-proxy and the CNI may make manual configuration of host-based firewall rules tricky. Some CNIs, like Calico, offers the ability to restrict node traffic through CRDs, but beware that this enforcement happens once the agents have been loaded/configured - before that (and if anything goes wrong), traffic to the nodes may be unrestricted. If using a daemon to automatically configure firewall rules, make sure that it doesn't flush all existing rules - alternatively configure dependencies to automatically reload kube-proxy etc. Alternatively, make sure to restrict traffic towards nodes at the underlying infrastructure layer (often easier, but relies on third-party) #net #hardening
+
+kube-proxy exposes two RO network listener with healthz (10256/TCP) / metrics (10249/TCP). Minor information leakage, but nothing too exciting. Considering its access to sensitive node credentials and most likely root equivlant privileges to configure netfilter rules, it may be a good idea to limit their exposure to minimize risk #net #hardening
+
+kube-proxy does not restrict which pods can talk to which services, that's the CNIs (or whatever look at the NetworkPolicy resources) role #net
+
+If you can shell on a node, you may be able to use the containerd CLI tool "ctr" to interact with containers, alternatively "crictl" to access them through the CRI socket #containerd
+
+By default, pods in Kubernetes have the environment variable "KUBERNETES_SERVICE_HOST" set - could be a good way to determine if the application you just shelled is running on Kubernetes #trivia
+
+Services of the type "LoadBalancer" relies on an integration between Kubernetes and the underlying platform. Implementation-specific details are typically configured using annotations - if these aren't restricted/"namespaced", it may be possible to break tenant isolation or access resources outside the cluster #net #privesc
