@@ -535,3 +535,39 @@ If you can shell on a node, you may be able to use the containerd CLI tool "ctr"
 By default, pods in Kubernetes have the environment variable "KUBERNETES_SERVICE_HOST" set - could be a good way to determine if the application you just shelled is running on Kubernetes #trivia
 
 Services of the type "LoadBalancer" relies on an integration between Kubernetes and the underlying platform. Implementation-specific details are typically configured using annotations - if these aren't restricted/"namespaced", it may be possible to break tenant isolation or access resources outside the cluster #net #privesc
+
+When writing cross-NS network policies, make sure to include nameSpaceSelector and podSelector inside the same to/from element. Common mistake, could allow unexpected traffic from that NS #net
+
+When writing cross-NS network policies, utilize "kubernetes.io/metadata.name" in the namespace selector - it is immutable and prevents admins from untrusted NS to circumvent restrictions #net
+
+If your pod is using hostNetwork, the behavior of network policies are not defined and depends on the CNI - most often, no restrictions are enforced #net #trivia
+
+Network policies can only be used to explicitly allow traffic, not deny it (except for "except" in "ipBlock") #net
+
+Network policies only restrict pod traffic, not node traffic #net
+
+No built-in method for cluster-default network policies, may be provided by extensions like Calico's "GlobalNetworkPolicy" #net
+
+Network policies don't define how/if denied/allowed traffic should be logged, up to CNI and not exposed through standard interfaces #net
+
+Enforcement behavior of network policies for established connections is undefined and up to CNI #net
+
+Kubernetes does not provide any indication if the CNI is actually enforcing the network policies or not, easy mistake to make though most do these days #net
+
+Checking that at least one (deny-by-default) network policy exist for each namespace is a good audit task #net
+
+If you use network policies to segregate traffic, you'll need to make sure that your policies allow communication between the linkerd control plane and its proxy containers #net #addon
+
+Mayhaps it would be neat with a demo accessing the Kubernetes API directly using curl and a stolen service account token? #todo #demo
+
+Third-party operators/addons to Kubernetes pose several security risks - misusing verbs (get for state-changing actions), exposing injection vulnerabilities through custom custom resources and being highly privileged in Kubernetes #addon
+
+There is a CIS benchmark for containerd, perhaps worth refering to in the runtimes presentation? #containerd #containersec
+
+The NSA's Kubernetes hardening guide (page 11) contains an illustration showing cool things that can be done with admission control webhook. Shows image signature verification, then image scanner and then some detection of privilege escalation attempts. Brings up policy conformance. Perhaps a good idea to add similar flow illustration #admission #containersec #privesc
+
+Namespaces are used for partitioning cluster resources/access, but at not automatically isolated from each other from a security point of view. Serve as the basis for RBAC rolebindings, network policies, etc. though #trivia
+
+By default, clusters contain three namespaces: default, kube-public and kube-system. You may not be able to delete them. Don't put anything sensitive in kube-public, due to default RBAC bindings. Default is used if nothing else is specified. #trivia
+
+grep pattern for finding kubeconfigs? #todo #goals

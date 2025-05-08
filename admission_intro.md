@@ -34,8 +34,8 @@ style: |
 modify requests sent to the API server.
 
 Many of these help us improve security
-by preventing dangerous configuration
-and enforcing best-practices.
+by preventing dangerous configuration and
+enforcing best-practices/policy conformance.
 
 Quite similar to "authorizers",
 but only called during resource

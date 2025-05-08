@@ -83,9 +83,10 @@ containerd is a Swiss army knife.
 CRI-O is minimal and specifically
 designed for usage with Kubernetes.
 
-Not huge impact on security,
-but more features/complexity
-increases risks of flaws.
+Not huge impact on security, but more
+features/complexity increases risks of flaws.
+
+Checkout [Nokia's "containerd-bench-security"](https://github.com/nokia/containerd-bench-security).
 
 ![bg right:30%](images/gas_refinery_orange.jpg)
 
