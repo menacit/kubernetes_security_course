@@ -3,7 +3,7 @@ SPDX-License-Identifier: CC-BY-SA-4.0
 
 Tags:
 > authn authz privesc breakout containersec hardening methodology persistence intro tenancy
-> forensics detection runtime cni ingress ctrlplane crypto recovery trivia demo labs quiz
+> forensics detection runtime cni ingress ctrlplane crypto recovery trivia demo labs quiz log
 > etcd kubelet containerd integration goals volume todo net pivot admission rbac addon secrets
 
 How is the control plane components hosted? As binaries running on hosts? Static pods running on nodes with Kubelets? As pods running inside another cluster? What about etcd - is it cohosted on the same nodes? An external cluster? #ctrlplane #trivia #intro #recovery
@@ -571,3 +571,28 @@ Namespaces are used for partitioning cluster resources/access, but at not automa
 By default, clusters contain three namespaces: default, kube-public and kube-system. You may not be able to delete them. Don't put anything sensitive in kube-public, due to default RBAC bindings. Default is used if nothing else is specified. #trivia
 
 grep pattern for finding kubeconfigs? #todo #goals
+
+Node isolation: you should try to isolate workers from the control plane nodes (and potentially eachother) as those are the at the largest risk of being compromised #ctrlplane #hardening #net
+
+Since Kubernetes 1.6, anonymous requests are disabled by default unless RBAC is enabled #authz #authn
+
+If anonymous requests are completely disabled, it will break some cluster discovery things and health endpoints #authn #trivia
+Reduce the audit logging level for sensitive resource types, such as secrets and perhaps configmaps, to prevent their content from being included/shipped in log #log
+
+The API server can log to file (JSONL) or via (batched) webhooks #log #ctrlplane
+
+Options for handling application logs from pod containers - 1: agent on nodes, 2: side-car container with agent, 3: Modifying app to forward logs 4: Picking up logs via Kubelet logs endpoint. Each approach has pros/cons #log
+
+Picking up container logs via the Kubernetes and Kubelet APIs is possible, but requires definition of an active connection per pod-container (overhead), only picks up logs from stdout/stderr and only usable for running pods* #log
+
+Modifying applications to directly forward logs to a centralized point provides lots of flexibility, tightly coupling formats etc. for the expected receiver and similar. It may not be desirable to tighly couple a specific logging solution/protocol to the application, third-party apps may not support the functionality and being able to quickly query logs using "kubectl logs" is quite neat (ofc, the app could also output logs to stderr) #log
+
+Using a side-car container for picking up and/or forwarding logs enables parsing/reformatting of custom log files from disk. Also does not require tightly coupling application with a specific log solution/format/protocol. Instead of directly forwarding logs, it could simply output them in the desired format to stdout/stderr for pickup #log
+
+Deploying a log forwarding agent on nodes is a great solution for shipping both pods and system logs to a centralized point. Many can be configured to watch a directory, like containerd's output logs, and thereby pickup all container output automatically. Commonly deployed using a daemonset with a shared host path. Depending on cluster/runtime setup/hardening, it may be challening to share host paths and is preferably combined with the "logging side-car container" approach to format/pickup appropriate logs #log
+
+Custom seccomp profiles pods/containers are defined in a JSON format described in https://github.com/opencontainers/runtime-spec/blob/f329913/config-linux.md#seccomp #trivia #containersec #hardening
+
+Kubernetes doesn't currently provide any built-in feature for distributing custom seccomp/AppArmor/SElinux profiles to nodes, they must exist at known location on the node's file system. Tools like https://github.com/kubernetes-sigs/security-profiles-operator aim to provide this. Another approach is supported by CRI-O, which relies on a pod or image annotation to download a seccomp profile from an OCI registry. Embeding (references to) profiles in images makes sense, as app developers likely knows best which syscalls will be needed - only supported by CRI-O and only for seccomp, however #containersec #hardening
+
+No standard interface for logging seccomp/AppArmor/SElinux policy violations, except that of the kernel log I would presume? Would be neat if it was exposed in a place tied to the pod #todo #containersec #log
