@@ -596,3 +596,22 @@ Custom seccomp profiles pods/containers are defined in a JSON format described i
 Kubernetes doesn't currently provide any built-in feature for distributing custom seccomp/AppArmor/SElinux profiles to nodes, they must exist at known location on the node's file system. Tools like https://github.com/kubernetes-sigs/security-profiles-operator aim to provide this. Another approach is supported by CRI-O, which relies on a pod or image annotation to download a seccomp profile from an OCI registry. Embeding (references to) profiles in images makes sense, as app developers likely knows best which syscalls will be needed - only supported by CRI-O and only for seccomp, however #containersec #hardening
 
 No standard interface for logging seccomp/AppArmor/SElinux policy violations, except that of the kernel log I would presume? Would be neat if it was exposed in a place tied to the pod #todo #containersec #log
+
+Relevant flaws in demo apps for K8S: LFI, SSRF and RCE #demo
+
+Recovery after compromise of worker node: take snaphost of host forensic purposes if possible, cordon node, cherry-pick data from (potentially infected) pod PVs and rotate them, revoke/rotate secrets used by node/pods, change name of service accounts used in pods on node (at least for long-lived tokens), drain node, shut it down, delete node object, add log detection/revocation check for credential ID, create new worker with new name #forensics #detection
+
+Linkerd supports configuration of "skip ports", which will bypass the proxy and thereby be left unauthenticated/unencrypted. Configuration per port is specified for inbound, outbound or both. Before version 2.10 (2021), a number of ports were included in the skip-list by default: 25 (SMTP), 443 (HTTPS), 587 (SMTP), 3306 (MySQL), 5432 (Postgres) and 11211 (Memcache) - perhaps also some Galera ports. Beware of usage, check Linkerd version and usage of "skip-(outbound|inbound)-ports" #net
+
+We can control if Linkerd sidecar should be injected by adding the annotation linkerd.io/inject: true/false to a pod. We can set this per namespace, but if we set it for a pod we can override the namespace default (if any) #net
+
+If you want two clusters to trust each other's workload identities, you could use the same trust anchor - that is, the same CA. But we should not do that for clusters of different privilege levels, like test and prod, as there are no cryptographic guarantees for which cluster the identity belong to #net
+
+Workloads identities in Linkerd are tied to service accounts, not pod names/UIDs. The workload certificate contains cluster name, namespace name, service account name #net
+Since workload identities in Linkerd are tied to service account names, does it mean we must have a service account tied to a pod? Not always desirable, it will be an authenticated user from the perspective of the API server regardless if we give it permissions using authorizers #net #todo #authn
+
+If the "default" service account in a namespace is deleted, a new one will be automatically created - another great reason not to use it. Perhaps even configure monitoring and alerting of it? #trivia #authn #detection
+
+When Linkerd is installed in a Kubernetes cluster, the default policy is "all-unauthenticated", mirror Kubernetes default unrestricted behavior. Makes sense as existing workloads would likely break otherwise, but beware of it. We can change it per namespace, excluding this like kube-system #net
+
+Pods don't automatically restart when their configmaps or secrets are update - eventually, they'll be updated (if mounted as volumes), but it requires logic in applications to pickup the changes. Likewise, (manipulating) admission controllers are only ran during CUD requests and not for stored existing resources. A workaround is to delete pods and let the controller recreate them, but that may cause disruptions if no PDB is in place - a better solution is to utilize "kubectl rollout restart your-deployment-name" #secrets #admission #trivia
